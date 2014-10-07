@@ -4,27 +4,17 @@ rvm:
 
 env:
   global:
-    - EB_TOOLS_DIR=/tmp/eb_tools EB_VERSION=AWS-ElasticBeanstalk-CLI-2.6.3
-    - EB_TOOLS=$EB_TOOLS_DIR/$EB_VERSION
+    # The global environment variables are available in all of the builds of a matrix.
+    # Here it is used for the test result and code coverage directories and the database location.
     - CI_REPORTS=shippable/testresults COVERAGE_REPORTS=shippable/codecoverage
-    - RDS_HOSTNAME=127.0.0.1 RDS_USERNAME=shippable RDS_PASSWORD="" RDS_DB_NAME=test RDS_PORT=3306
-    - secure: XPSEmUYKHKqIxtIx7ze2QfU2anSHTb8reMT+zEYOQwVoBRgAr1SuAPCv1hjlCAPCXNrUVcTFl+TiPdoZHeQOju5RGmOqGBvfhx799qwfJHpIAPqU13UcQq9onerUV+/tM2MOwvL8zE9aKBi6hg6U9R/1P6VYWjpIx7+G+8d+LMdPgvhzAoWf4/+TsVzlKX85fG2jM2Zamtq4ukM9cNR4IMYoMSu245KYsoomjUcNZrYkwSqbtl5m5O+Eg8pl3TRj64oEHSMz+OJ3SZ5BYpcnrQIx2sN/iuHST4bbCHBuoyrxgHBKcv6zZ4SWC4JH3m60ORVx5iIpKyyr14nuECKJkQ==
-
-before_install:
-  - if [ ! -e $EB_TOOLS ]; then wget -q -O /tmp/eb.zip https://s3.amazonaws.com/elasticbeanstalk/cli/$EB_VERSION.zip && mkdir -p $EB_TOOLS_DIR && unzip /tmp/eb.zip -d $EB_TOOLS_DIR; fi
+    - MYSQL_HOSTNAME=127.0.0.1 MYSQL_USERNAME=shippable MYSQL_PASSWORD="" MYSQL_DB_NAME=test MYSQL_PORT=3306
 
 before_script: 
+  # Setting up the directories we need to get test results and code coverage:
   - mkdir -p shippable/testresults
   - mkdir -p shippable/codecoverage
-  - mysql -e 'create database if not exists test;'
-  - mkdir -p ~/.elasticbeanstalk
-  - echo 'AWSAccessKeyId=AKIAJSZ63DTL3Z7KLVEQ' >> ~/.elasticbeanstalk/aws_credential_file
-  - echo 'AWSSecretKey='$AWSSecretKey >> ~/.elasticbeanstalk/aws_credential_file
-
-script:
-  - mkdir -p .elasticbeanstalk
-  - cp config .elasticbeanstalk/
-
-after_success :
-  - $EB_TOOLS/AWSDevTools/Linux/AWSDevTools-RepositorySetup.sh
-  - export PATH=$PATH:$EB_TOOLS/eb/linux/python2.7/ && virtualenv ve && source ve/bin/activate && pip install boto==2.14.0 && eb push
+  # Resetting the database in before_script makes sure that the database is always empty for consistent test results.
+  - mysql -e 'DROP DATABASE IF EXISTS test;'
+  - mysql -e 'CREATE DATABASE IF NOT EXISTS test;'
+  
+cache: true

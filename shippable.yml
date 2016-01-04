@@ -3,6 +3,10 @@ language: ruby
 rvm:
   - 1.9.3
 
+build_image: drydock/u12rubpls:tip
+
+services:
+  - mysql
 env:
   global:
     # The global environment variables are available in all of the builds of a matrix.
